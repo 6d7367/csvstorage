@@ -145,7 +145,7 @@ type SelectQuery struct {
 	schema CSVTableSchema
 }
 
-type SelectQueryResultRecord map[int]string
+type SelectQueryResultRecord map[string]string
 
 type SelectQueryResult []SelectQueryResultRecord
 
@@ -181,26 +181,37 @@ func (this *SelectQuery) Limit(limit int) *SelectQuery {
 	return this
 }
 
-func (this *SelectQuery) Do() [][]string {
+func (this *SelectQuery) Do() SelectQueryResult {
 	r, _ := os.Open(this.table + ".csv")
 
 	csvReader := csv.NewReader(r)
 
 	records, _ := csvReader.ReadAll()
 
-	result := make([][]string, 0)
+	result := make(SelectQueryResult, 0)
+
+	outputFields := make(map[string]int)
+	for _, f := range this.fields {
+		outputFields[f] = this.schema[f].index
+	}
 
 	for _, v := range records {
 		if len(result) >= this.limit && this.limit != 0 {
 			break
 		}
 
+		selectQueryResultRecord := make(SelectQueryResultRecord)
+
+		for fName, fIndex := range outputFields {
+			selectQueryResultRecord[fName] = v[fIndex]
+		}
+
 		if this.where != nil {
 			if this.where.Compute(v, this.schema) {
-				result = append(result, v)
+				result = append(result, selectQueryResultRecord)
 			}
 		} else {
-			result = append(result, v)
+			result = append(result, selectQueryResultRecord)
 		}
 
 	}
@@ -209,14 +220,11 @@ func (this *SelectQuery) Do() [][]string {
 }
 
 func main() {
-	simpleWhere1 := NewSimpleWhere("id", ">", "1")
-	simpleWhere2 := NewSimpleWhere("content", "=", "три")
-	complexWhere := NewComplexWhereCondition("AND", simpleWhere1, simpleWhere2)
+	simpleWhere1 := NewSimpleWhere("id", "<", "3")
+	simpleWhere2 := NewSimpleWhere("content", "=", "четыре")
+	complexWhere := NewComplexWhereCondition("OR", simpleWhere1, simpleWhere2)
 	q := Select("content", "id").From("index").Where(complexWhere)
 	for _, r := range q.Do() {
-		for _, f := range r {
-			fmt.Print(f, " ")
-		}
-		fmt.Println()
+		fmt.Println(r)
 	}
 }
