@@ -103,6 +103,37 @@ func (this WhereSimpleCondition) Compute(record []string, schema CSVTableSchema)
 	return false
 }
 
+type WhereComplexCondition struct {
+	logicCond    string
+	cond1, cond2 WhereCondition
+}
+
+func NewComplexWhereCondition(logicCond string, cond1, cond2 WhereCondition) WhereComplexCondition {
+	c := WhereComplexCondition{
+		logicCond: logicCond,
+		cond1:     cond1,
+		cond2:     cond2,
+	}
+
+	return c
+}
+
+func (this WhereComplexCondition) Compute(record []string, schema CSVTableSchema) bool {
+	r1 := this.cond1.Compute(record, schema)
+	r2 := this.cond2.Compute(record, schema)
+
+	var r bool
+
+	switch this.logicCond {
+	case "AND":
+		r = r1 && r2
+	case "OR":
+		r = r1 || r2
+	}
+
+	return r
+}
+
 type SelectQuery struct {
 	fields       []string
 	table        string
@@ -181,8 +212,10 @@ func (this *SelectQuery) Do() SelectQueryResult {
 }
 
 func main() {
-	simpleWhere := NewSimpleWhere("id", "!=", "1")
-	q := Select("content", "id").From("index").Limit(3).Where(simpleWhere)
+	simpleWhere1 := NewSimpleWhere("id", ">", "1")
+	simpleWhere2 := NewSimpleWhere("id", "=", "4")
+	complexWhere := NewComplexWhereCondition("AND", simpleWhere1, simpleWhere2)
+	q := Select("content", "id").From("index").Limit(3).Where(complexWhere)
 	for _, r := range q.Do() {
 		for _, f := range r {
 			fmt.Print(f, " ")
