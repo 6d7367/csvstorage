@@ -1,3 +1,8 @@
+// Пример использования составного where-условия:
+// 	simpleWhere1 := csvstorage.NewSimpleWhere("id", "<", "3")
+// 	simpleWhere2 := csvstorage.NewSimpleWhere("content", "=", "четыре")
+// 	complexWhere := csvstorage.NewComplexWhereCondition("OR", simpleWhere1, simpleWhere2)
+// 	q := csvstorage.Select("content", "id").From("index").Where(complexWhere)
 package csvstorage
 
 import "strconv"
