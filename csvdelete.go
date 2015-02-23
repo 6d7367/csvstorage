@@ -1,3 +1,6 @@
+// Пример удаления записи с использование where
+//	simpleWhere := csvstorage.NewSimpleWhere("id", "<", "3")
+// 	csvstorage.Delete("index").Where(simpleWhere).Do()
 package csvstorage
 
 import (
@@ -43,7 +46,7 @@ func (this *DeleteQuery) Do() {
 	for _, v := range records {
 		// затем проверяю, задано ли какое-то условие для фильтрации
 		if this.where != nil {
-			// если задано и оно проверка проходит удачно, то добавляю к результатам текущую запись
+			// если задано и оно проверка проходит неудачно, то добавляю к результатам текущую запись
 			if !this.where.Compute(v, this.schema) {
 				result = append(result, v)
 			}
