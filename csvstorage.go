@@ -52,55 +52,58 @@ func NewSimpleWhere(field, op, value string) WhereSimpleCondition {
 func (this WhereSimpleCondition) Compute(record []string, schema CSVTableSchema) bool {
 
 	testInt := func(op string, value, test int) bool {
+		var r bool
 		switch op {
 		case "=":
-			return value == test
+			r = value == test
 		case "!=":
-			return value != test
+			r = value != test
 		case "<":
-			return value < test
+			r = value < test
 		case ">":
-			return value > test
+			r = value > test
 		case "<=":
-			return value <= test
+			r = value <= test
 		case ">=":
-			return value >= test
+			r = value >= test
 		}
 
-		return false
+		return r
 	}
 
 	testStr := func(op, value, test string) bool {
+		var r bool
 		switch op {
 		case "=":
-			return value == test
+			r = value == test
 		case "!=":
-			return value != test
+			r = value != test
 		case "<":
-			return value < test
+			r = value < test
 		case ">":
-			return value > test
+			r = value > test
 		case "<=":
-			return value <= test
+			r = value <= test
 		case ">=":
-			return value >= test
+			r = value >= test
 		}
 
-		return false
+		return r
 	}
 
 	fieldIndex := schema[this.field].index
+	var r bool
 
 	switch schema[this.field].recordType {
 	case "int":
 		fieldValue, _ := strconv.ParseInt(record[fieldIndex], 10, 32)
 		testValue, _ := strconv.ParseInt(this.value, 10, 32)
-		return testInt(this.op, int(fieldValue), int(testValue))
-	case "string":
-		return testStr(this.op, record[fieldIndex], this.value)
+		r = testInt(this.op, int(fieldValue), int(testValue))
+	case "text":
+		r = testStr(this.op, record[fieldIndex], this.value)
 	}
 
-	return false
+	return r
 }
 
 type WhereComplexCondition struct {
@@ -135,12 +138,11 @@ func (this WhereComplexCondition) Compute(record []string, schema CSVTableSchema
 }
 
 type SelectQuery struct {
-	fields       []string
-	table        string
-	where        WhereCondition
-	limit        int
-	schema       CSVTableSchema
-	fieldsToRead []int
+	fields []string
+	table  string
+	where  WhereCondition
+	limit  int
+	schema CSVTableSchema
 }
 
 type SelectQueryResultRecord map[int]string
@@ -164,10 +166,6 @@ func (this *SelectQuery) From(table string) *SelectQuery {
 
 	this.table = table
 
-	for _, fieldName := range this.fields {
-		this.fieldsToRead = append(this.fieldsToRead, this.schema[fieldName].index)
-	}
-
 	return this
 }
 
@@ -183,27 +181,26 @@ func (this *SelectQuery) Limit(limit int) *SelectQuery {
 	return this
 }
 
-func (this *SelectQuery) Do() SelectQueryResult {
+func (this *SelectQuery) Do() [][]string {
 	r, _ := os.Open(this.table + ".csv")
 
 	csvReader := csv.NewReader(r)
 
 	records, _ := csvReader.ReadAll()
 
-	result := make(SelectQueryResult, 0)
+	result := make([][]string, 0)
 
 	for _, v := range records {
 		if len(result) >= this.limit && this.limit != 0 {
 			break
 		}
 
-		if this.where.Compute(v, this.schema) {
-			resultRecord := make(SelectQueryResultRecord)
-			for _, fieldIndex := range this.fieldsToRead {
-
-				resultRecord[fieldIndex] = v[fieldIndex]
+		if this.where != nil {
+			if this.where.Compute(v, this.schema) {
+				result = append(result, v)
 			}
-			result = append(result, resultRecord)
+		} else {
+			result = append(result, v)
 		}
 
 	}
@@ -213,9 +210,9 @@ func (this *SelectQuery) Do() SelectQueryResult {
 
 func main() {
 	simpleWhere1 := NewSimpleWhere("id", ">", "1")
-	simpleWhere2 := NewSimpleWhere("id", "=", "4")
+	simpleWhere2 := NewSimpleWhere("content", "=", "три")
 	complexWhere := NewComplexWhereCondition("AND", simpleWhere1, simpleWhere2)
-	q := Select("content", "id").From("index").Limit(3).Where(complexWhere)
+	q := Select("content", "id").From("index").Where(complexWhere)
 	for _, r := range q.Do() {
 		for _, f := range r {
 			fmt.Print(f, " ")
