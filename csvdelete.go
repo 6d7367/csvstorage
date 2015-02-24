@@ -1,6 +1,5 @@
-// Пример удаления записи с использование where
-//	simpleWhere := csvstorage.NewSimpleWhere("id", "<", "3")
-// 	csvstorage.Delete("index").Where(simpleWhere).Do()
+// Пакет позволяет манипулировать записями в csv файлах с
+// помощью sql-подобных запросов
 package csvstorage
 
 import (
@@ -8,6 +7,9 @@ import (
 	"os"
 )
 
+// Пример удаления записи с использование where
+//	simpleWhere := csvstorage.NewSimpleWhere("id", "<", "3")
+// 	csvstorage.Delete("index").Where(simpleWhere).Do()
 type DeleteQuery struct {
 	table  string
 	where  WhereCondition
